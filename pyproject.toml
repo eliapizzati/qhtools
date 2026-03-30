@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qhtools"
+version = "0.1.0"
+description = "Collection of routines that are useful to multiple projects"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [
+  { name = "Elia Pizzati" }
+]
+dependencies = [
+  "numpy>=1.24",
+  "numba>=0.59"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.5"
+]
+
+[project.urls]
+Repository = "https://github.com/eliapizzati/qhtools"
+
+[tool.setuptools.packages.find]
+include = ["qhtools*"]
