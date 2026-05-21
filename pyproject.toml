@@ -14,7 +14,9 @@ authors = [
 ]
 dependencies = [
   "numpy>=1.24",
-  "numba>=0.59"
+  "numba>=0.59",
+  "scipy",
+  "colossus"
 ]
 
 [project.optional-dependencies]
@@ -28,3 +30,10 @@ Repository = "https://github.com/eliapizzati/qhtools"
 
 [tool.setuptools.packages.find]
 include = ["qhtools*"]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+  # numba supports np.trapz but not np.trapezoid, so the deprecation under
+  # numpy>=2 is deliberate (see qhtools/clustering/qhmf_to_corr.py).
+  "ignore:`trapz` is deprecated:DeprecationWarning",
+]

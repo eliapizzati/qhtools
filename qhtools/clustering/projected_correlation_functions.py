@@ -160,6 +160,36 @@ def _refine_bins(corr, bin_edges, n_sub):
     return sub_edges, sub_corr
 
 
+@jit(nopython=True)
+def _ensure_edges(corr, bins):
+    """Accept either bin EDGES (length N+1) or bin CENTERS (length N).
+
+    ``corr`` is sampled at N points. If ``bins`` has N+1 entries it is already
+    a set of edges and is returned unchanged. If it has N entries the caller
+    passed bin CENTERS (e.g. the output of ``get_corr_from_triangle``, which
+    returns xi at ``log_rbins_centers``); proper edges are reconstructed as
+    log-space midpoints, with the two end edges linearly extrapolated in log10.
+
+    Passing centers as if they were edges silently shifts the correlation
+    profile by ~half a bin (≈6% median / ≈50% max error on wp / xi_vol). This
+    guard makes the common triangle→projection pipeline correct regardless of
+    whether the caller supplies centers or edges.
+    """
+    n = len(corr)
+    out = np.empty(n + 1)
+    if len(bins) == n + 1:
+        for k in range(n + 1):
+            out[k] = bins[k]
+        return out
+    # `bins` are N centers -> reconstruct N+1 edges
+    log_c = np.log10(bins)
+    out[0] = 10.0 ** (2.0 * log_c[0] - 0.5 * (log_c[0] + log_c[1]))
+    for k in range(1, n):
+        out[k] = 10.0 ** (0.5 * (log_c[k - 1] + log_c[k]))
+    out[n] = 10.0 ** (2.0 * log_c[n - 1] - 0.5 * (log_c[n - 2] + log_c[n - 1]))
+    return out
+
+
 # --------------------------------------------------------------------------- #
 #  wp(rp) — projected correlation function                                     #
 # --------------------------------------------------------------------------- #
@@ -219,10 +249,12 @@ def get_projected_wp(rp_arr, corr, bin_edges, pimax=150., n_sub=10):
         (need not coincide with bin_edges).
     corr : 1D array, length N
         ξ values at bin centres (dimensionless).
-    bin_edges : 1D array, length N+1
-        Radial bin edges. Must span at least from min(rp_arr) to
-        √(max(rp_arr)² + πmax²) for full coverage; bins outside the
-        integration range are silently skipped.
+    bin_edges : 1D array, length N+1 (edges) or length N (centers)
+        Radial bins of the input ξ. Either bin edges (N+1) or bin centers
+        (N, e.g. the output of get_corr_from_triangle) — auto-detected by
+        length and reconstructed to edges if needed (see _ensure_edges).
+        Must span at least from min(rp_arr) to √(max(rp_arr)² + πmax²) for
+        full coverage; bins outside the integration range are silently skipped.
     pimax : float
         Maximum line-of-sight integration distance (same units as
         bin_edges).
@@ -235,6 +267,7 @@ def get_projected_wp(rp_arr, corr, bin_edges, pimax=150., n_sub=10):
     wp : 1D array, same length as rp_arr
         Projected correlation function (units of length).
     """
+    bin_edges = _ensure_edges(corr, bin_edges)
     sub_edges, sub_corr = _refine_bins(corr, bin_edges, n_sub)
     return _wp_piecewise(rp_arr, sub_corr, sub_edges, pimax)
 
@@ -371,8 +404,10 @@ def get_volume_averaged_xi(output_edges, corr, bin_edges, pimax=150., n_sub=10):
         are the projected-separation bin edges (not the radial bins of ξ).
     corr : 1D array, length N
         ξ values at bin centres (dimensionless).
-    bin_edges : 1D array, length N+1
-        Radial bin edges of the input ξ (same units as output_edges).
+    bin_edges : 1D array, length N+1 (edges) or length N (centers)
+        Radial bins of the input ξ (same units as output_edges). Either edges
+        (N+1) or centers (N, e.g. from get_corr_from_triangle) — auto-detected
+        by length and reconstructed to edges if needed (see _ensure_edges).
     pimax : float
         Maximum line-of-sight distance (half-depth of the cylinder).
     n_sub : int
@@ -384,5 +419,6 @@ def get_volume_averaged_xi(output_edges, corr, bin_edges, pimax=150., n_sub=10):
     xi_vol : 1D array, length M
         Volume-averaged ξ in each output bin (dimensionless).
     """
+    bin_edges = _ensure_edges(corr, bin_edges)
     sub_edges, sub_corr = _refine_bins(corr, bin_edges, n_sub)
     return _xi_vol_piecewise(output_edges, sub_corr, sub_edges, pimax)
