@@ -62,6 +62,8 @@ import numpy as np
 from numba import jit
 
 
+
+
 @jit(nopython=True)
 def _compute_mass_weights(log_mbins_centers, delta_log_m, log_m_axis, qhmf):
     """Compute fractional number-density weight for each mass bin.
@@ -92,7 +94,7 @@ def _compute_mass_weights(log_mbins_centers, delta_log_m, log_m_axis, qhmf):
     """
     n = len(log_mbins_centers)
     weights = np.empty(n)
-    norm_tot = np.trapz(qhmf, x=log_m_axis)
+    norm_tot = np.trapezoid(qhmf, x=log_m_axis)
 
     for i in range(n):
         if log_mbins_centers[i] < log_m_axis[0]:
@@ -130,7 +132,7 @@ def get_corr_from_triangle(log_rbins_centers, log_mbins_centers, triangle,
     """
     xi_total = np.zeros_like(log_rbins_centers)
 
-    norm_tot = np.trapz(qhmf, x=log_m_axis)
+    norm_tot = np.trapezoid(qhmf, x=log_m_axis)
     if norm_tot == 0.0:
         return log_rbins_centers, xi_total
 
@@ -173,8 +175,8 @@ def get_corr_from_triangle_cross(log_rbins_centers, log_mbins_centers, triangle,
     """
     xi_total = np.zeros_like(log_rbins_centers)
 
-    norm_tot1 = np.trapz(qhmf1, x=log_m_axis)
-    norm_tot2 = np.trapz(qhmf2, x=log_m_axis)
+    norm_tot1 = np.trapezoid(qhmf1, x=log_m_axis)
+    norm_tot2 = np.trapezoid(qhmf2, x=log_m_axis)
     if norm_tot1 == 0.0 or norm_tot2 == 0.0:
         return log_rbins_centers, xi_total
 

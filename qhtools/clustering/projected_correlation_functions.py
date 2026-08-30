@@ -43,7 +43,7 @@ references. Runtime is microseconds after JIT compilation.
 Comparison with other approaches (see scripts/compare_wp_integration.py and
 scripts/compare_xi_vol_integration.py for full benchmarks):
 
-  - Grid integration in the r-variable (np.trapz): erratic singularity
+  - Grid integration in the r-variable (np.trapezoid): erratic singularity
     errors at small rp that do not converge cleanly with grid refinement.
   - Grid integration in the π-variable: no singularity but structurally
     slower (ξ must be re-evaluated for each rp, defeating precomputation).
